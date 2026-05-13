@@ -1,5 +1,21 @@
 "use client";
 
+/**
+ * Composition root for the chat experience.
+ *
+ * Pulls all state from `useChats` and lays out:
+ *   ┌────────┬──────────────────────────┐
+ *   │ Side-  │  Header                  │
+ *   │ bar    ├──────────────────────────┤
+ *   │        │  EmptyState | MessageList│
+ *   │        ├──────────────────────────┤
+ *   │        │  ChatInput               │
+ *   └────────┴──────────────────────────┘
+ *
+ * Sidebar visibility is local UI state (mobile only — on md+ it's pinned).
+ * Errors bubble up to toast notifications. Everything else is a function-as-prop.
+ */
+
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Header } from "./Header";

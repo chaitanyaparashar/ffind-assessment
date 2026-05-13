@@ -1,5 +1,17 @@
 "use client";
 
+/**
+ * MessageBubble — renders one chat message in three visual variants:
+ *
+ *   - user      → primary-colored bubble, right-aligned, preserves whitespace
+ *   - assistant → muted bubble, left-aligned, markdown + code highlighting
+ *   - error     → destructive bubble showing `message.error` instead of content
+ *
+ * Assistant messages route through `react-markdown` (+ GFM tables/lists +
+ * `rehype-highlight` for fenced code blocks). The Tailwind `prose` plugin
+ * provides the readable typography.
+ */
+
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";

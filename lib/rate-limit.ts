@@ -1,5 +1,15 @@
-// Simple per-IP token bucket. In-memory — resets per cold start.
-// Adequate for a demo; production should use Redis/Upstash.
+/**
+ * Per-IP token bucket rate limiter.
+ *
+ * Each client (keyed by IP) gets a bucket of CAPACITY tokens that refill
+ * at REFILL_PER_MINUTE / 60s. Each request consumes one token. When the
+ * bucket is empty, callers get { ok: false, retryAfter } and the API
+ * route returns 429 + a `Retry-After` header.
+ *
+ * LIMITATION: in-memory state. On Edge runtime this means each isolate
+ * has its own bucket, and on cold start the bucket resets. Adequate for
+ * a demo / single-user assessment; production would use Redis (Upstash).
+ */
 
 type Bucket = { tokens: number; lastRefill: number };
 

@@ -1,5 +1,15 @@
 "use client";
 
+/**
+ * Header — brand mark, active chat title, and two affordances:
+ *   - mobile-only hamburger to open the sidebar
+ *   - "Clear" button (with confirm dialog) that wipes the active chat's
+ *     messages and resets its title to "New chat" without deleting the row
+ *
+ * The Clear button is disabled when there's nothing to clear (no messages
+ * in the active chat).
+ */
+
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,

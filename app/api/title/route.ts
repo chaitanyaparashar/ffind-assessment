@@ -1,3 +1,11 @@
+/**
+ * POST /api/title — generates a short summary title for a chat thread.
+ *
+ * Called fire-and-forget by the client after a chat's first user+assistant
+ * exchange completes. If this fails (rate-limit, network, etc.) the client
+ * silently keeps the fallback title (first 40 chars of the user message) —
+ * the chat never blocks on title generation.
+ */
 import { z } from "zod";
 import { summarizeTitle } from "@/lib/gemini";
 import { rateLimit } from "@/lib/rate-limit";

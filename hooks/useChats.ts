@@ -1,5 +1,28 @@
 "use client";
 
+/**
+ * useChats — the single source of truth for all client-side chat state.
+ *
+ * What it owns:
+ *   - `chats[]` and `activeId` (which thread is showing)
+ *   - streaming `status` and `error` for the active turn
+ *   - an `AbortController` so Stop / clear / switch can cancel cleanly
+ *   - the typewriter timer that paces streamed text to a constant cadence
+ *   - hydration from localStorage on mount + write-through after each turn
+ *
+ * Components above are intentionally dumb — they call methods from here and
+ * render the resulting state. All mutations go through `setState((prev) => ...)`
+ * patches so every chat update bumps `updatedAt` for sidebar ordering.
+ *
+ * Streaming flow inside `sendMessage`:
+ *   network reader  →  `target` ref   (everything we've received)
+ *                       │
+ *                       ▼
+ *                  typewriter tick  →  React state  →  UI
+ *                       │
+ *                       └── awaited by `typewriterDone` before status → idle
+ */
+
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   loadState,
@@ -9,6 +32,7 @@ import {
 } from "@/lib/storage";
 import type { Chat, ChatStatus, ChatsState, Message } from "@/lib/types";
 
+// Web crypto with a deterministic fallback for older test runners.
 function newId(): string {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
     return crypto.randomUUID();
@@ -16,6 +40,9 @@ function newId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
+// Translate raw SDK / fetch errors into user-readable copy. Patterns are
+// matched in priority order; anything we don't recognize and that is over
+// 160 chars long gets a generic message rather than dumping a stack trace.
 function friendlyError(raw: string): string {
   if (/503|service unavailable|high demand|overloaded/i.test(raw)) {
     return "Gemini is busy right now. Please try again in a moment.";
@@ -36,7 +63,9 @@ function friendlyError(raw: string): string {
   return raw;
 }
 
-// Typewriter pacing — constant cadence, time-based.
+// Typewriter pacing — constant cadence, time-based (NOT refresh-rate based).
+// Speed = CHARS_PER_TICK × (1000 / TICK_INTERVAL_MS) chars/sec.
+// Defaults: 2 × (1000 / 30) ≈ 66 chars/sec — feels like ChatGPT/Claude.
 const CHARS_PER_TICK = 2;
 const TICK_INTERVAL_MS = 30;
 

@@ -1,6 +1,18 @@
+/**
+ * Server-only wrapper around `@google/generative-ai`. Exposes two functions:
+ *
+ *   - `streamGemini` — used by /api/chat, returns a ReadableStream of text
+ *   - `summarizeTitle` — used by /api/title, returns a short title string
+ *
+ * IMPORTANT: this module reads `process.env.GEMINI_API_KEY` and must NEVER be
+ * imported by client code, or the key would leak into the browser bundle.
+ */
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import type { Role } from "./types";
 
+// Flash Lite chosen for its 1,000 RPD free-tier quota (vs Flash's 250 RPD).
+// Reasoning quality is sufficient for general chat; raw throughput matters
+// more for an assessment where reviewers may make many requests.
 const MODEL = "gemini-2.5-flash-lite";
 
 type IncomingMessage = { role: Role; content: string };
@@ -36,6 +48,12 @@ export async function summarizeTitle(
   return cleaned;
 }
 
+/**
+ * Stream a chat completion for the given message history.
+ * @param messages The conversation so far; last message MUST be from "user".
+ * @param signal Abort signal forwarded from the request — when the browser
+ *   disconnects mid-stream, we stop reading from Gemini to save quota.
+ */
 export async function streamGemini(
   messages: IncomingMessage[],
   signal: AbortSignal,
@@ -43,6 +61,8 @@ export async function streamGemini(
   const client = getClient();
   const model = client.getGenerativeModel({ model: MODEL });
 
+  // Gemini's SDK separates history (previous turns) from the prompt itself.
+  // The role mapping differs from OpenAI: assistant → "model".
   const history = messages.slice(0, -1).map((m) => ({
     role: m.role === "assistant" ? "model" : "user",
     parts: [{ text: m.content }],
@@ -52,6 +72,8 @@ export async function streamGemini(
   const chat = model.startChat({ history });
   const result = await chat.sendMessageStream(last.content);
 
+  // Adapt Gemini's async-iterator into a web-standard ReadableStream so the
+  // browser can consume it via `response.body.getReader()`.
   const encoder = new TextEncoder();
   return new ReadableStream<Uint8Array>({
     async start(controller) {

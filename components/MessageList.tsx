@@ -1,5 +1,20 @@
 "use client";
 
+/**
+ * MessageList — scrollable message log with smart auto-follow.
+ *
+ * Three scroll behaviors coexist:
+ *   1. New message added (user submit or assistant placeholder) → always
+ *      snap to the bottom and re-enable follow mode.
+ *   2. Streaming content grows → follow if the user is near the bottom
+ *      (within FOLLOW_THRESHOLD_PX). If they scrolled up to read, leave
+ *      them alone.
+ *   3. User scrolls back down past the threshold → follow mode re-enables.
+ *
+ * Streaming-placeholder bubbles (empty assistant message during streaming)
+ * render the three pulsing dots instead of an empty bubble.
+ */
+
 import { useEffect, useRef } from "react";
 import { MessageBubble } from "./MessageBubble";
 import { LoadingDots } from "./LoadingDots";

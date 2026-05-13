@@ -1,3 +1,17 @@
+/**
+ * SSR-safe localStorage adapter for the chat app's full state.
+ *
+ * Storage shape (versioned under `STORAGE_KEY`):
+ *   { chats: Chat[], activeId: string | null }
+ *
+ * Every function guards `typeof window !== "undefined"` so the module is
+ * safe to import from server components. All errors (malformed JSON, quota
+ * exceeded, disabled storage) degrade silently so the UI stays usable
+ * even when persistence is broken.
+ *
+ * Includes a one-time migration from the v1 single-thread schema
+ * (`chat-history-v1` → wrapped into a single Chat under the new key).
+ */
 import type { Chat, ChatsState, Message } from "./types";
 
 export const STORAGE_KEY = "chats-v1";

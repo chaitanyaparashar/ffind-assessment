@@ -1,3 +1,9 @@
+/**
+ * Shared types used by both the client (useChats, components) and the
+ * server (API routes, lib/gemini). Keeping them centralized here means
+ * any change to the message shape is a single-edit refactor.
+ */
+
 export type Role = "user" | "assistant";
 
 export type Message = {

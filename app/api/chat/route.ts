@@ -1,9 +1,25 @@
+/**
+ * POST /api/chat — proxies a streaming chat completion from Google Gemini.
+ *
+ * Flow:
+ *   1. Rate-limit by client IP (in-memory token bucket).
+ *   2. Validate body with Zod (shape, content length, last-msg-from-user).
+ *   3. Pipe `streamGemini()` straight back to the browser as a plain-text
+ *      ReadableStream — the client reads it chunk-by-chunk into the UI.
+ *
+ * Edge runtime is used for fast streaming start and a smaller attack surface.
+ * The Gemini SDK is only imported here (server-only) so the API key never
+ * reaches the browser bundle.
+ */
 import { z } from "zod";
 import { streamGemini } from "@/lib/gemini";
 import { rateLimit } from "@/lib/rate-limit";
 
 export const runtime = "edge";
 
+// Bound the request: at least one message, no more than 40 (cheap protection
+// against a malicious client trying to push huge contexts), and content
+// length capped so a runaway loop client-side can't DoS Gemini's quota.
 const BodySchema = z.object({
   messages: z
     .array(
@@ -19,6 +35,9 @@ const BodySchema = z.object({
     }),
 });
 
+// Resolve a stable per-client identifier for rate limiting. Prefers the
+// proxy-supplied forwarded headers; falls back to "anonymous" so missing
+// headers in dev still flow through a single shared bucket.
 function getIp(req: Request): string {
   return (
     req.headers.get("x-forwarded-for")?.split(",")[0].trim() ||

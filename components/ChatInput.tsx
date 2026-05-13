@@ -1,5 +1,18 @@
 "use client";
 
+/**
+ * ChatInput — auto-growing textarea with a send / stop button.
+ *
+ * Keyboard:
+ *   - Enter        → submit (only if non-empty and not currently streaming)
+ *   - Shift+Enter  → insert a newline
+ *
+ * The Send button swaps to a Stop button while `streaming === true`, matching
+ * ChatGPT / Claude. The textarea is intentionally NOT disabled during a
+ * stream — users can type the next message ahead of time, but submit is
+ * blocked until status returns to idle.
+ */
+
 import { useRef, useState, useEffect, FormEvent, KeyboardEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";

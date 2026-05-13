@@ -1,5 +1,19 @@
 "use client";
 
+/**
+ * Sidebar — multi-chat history navigator.
+ *
+ * Lists chats sorted by `updatedAt` desc, with per-row delete on hover.
+ * Two confirm dialogs are gated by local state:
+ *   - `switchTarget`  — opened when the user tries to switch chats (or open a
+ *                       new one) while a stream is in flight. The pending id
+ *                       is stashed so the confirm action knows which chat to
+ *                       activate. The sentinel `"__new__"` means "new chat".
+ *   - `deleteTarget`  — opened when the user clicks a row's trash icon.
+ *
+ * On mobile the sidebar slides in over a backdrop; on `md+` it's docked.
+ */
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
